@@ -2,6 +2,14 @@
 
 Script to extract Ticket and Comment object from Zendesk
 
+
+## Setup
+
+Environment variables must be set (or saved in `.env`):
+ - `ZENDESK_EMAIL` containing the email address
+ - `ZENDESK_TOKEN` containing the API token, retrieved through their web portal
+
+
 ## Run
 
 Run `main.py` to save all data.
