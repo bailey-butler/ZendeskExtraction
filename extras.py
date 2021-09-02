@@ -1,7 +1,13 @@
 import json
+import os
+
+import retrieve
 
 
 def load_data(obj_type: str) -> dict[str, dict]:
+    if not os.path.exists(f"data/{obj_type}.json"):
+        retrieve.retrieve_and_save(obj_type, save=True)
+
     with open(f"data/{obj_type}.json") as f:
         raw_data = json.load(f)
     data: dict[str, dict] = {
