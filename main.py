@@ -1,6 +1,7 @@
 import csv
 import json
 import os.path
+import time
 
 from progressbar import progressbar, Bar
 
@@ -57,26 +58,32 @@ organization_keys = [
 
 
 # Function to update dynamic columns (user, group, organisation) replacing ID with title/meaningful value
-def replace(key, value):
+def replace(key: str, value: str) -> list[tuple[str, str]]:
     if key in user_keys:
         if value in users:
-            return users.get(value).get("name")
-        return ""
+            new_key = key.split("_")[0]
+            user = users.get(value)
+            return [
+                (f"{new_key}", user.get("name")),
+                (f"{new_key}_email", user.get("email")),
+                (f"{new_key}_id", user.get("id"))
+            ]
+        return [(key, "")]
 
     if key in group_keys:
         if value in groups:
-            return groups.get(value).get("name")
-        return ""
+            return [(key, groups.get(value).get("name"))]
+        return [(key, "")]
 
     if key in organization_keys:
         if value in organizations:
-            return organizations.get(value).get("name")
-        return ""
+            return [(key, organizations.get(value).get("name"))]
+        return [(key, "")]
 
     if key == "tags":
-        return ",".join(value)
+        return [(key, ",".join(value))]
 
-    return value
+    return [(key, value)]
 
 
 all_tickets: list[dict] = []
@@ -85,12 +92,12 @@ all_comments: list[dict] = []
 # Iterate over every ticket, get specified columns and save all comments
 for ticket_id, ticket in progressbar(tickets.items()):
     # Skip over scam Russian entries
-    if ".ru/" in ticket["description"] or ".su/" in ticket["description"]:
+    if any(flagged in ticket["description"] for flagged in [".ru/", ".ru.", ".r/", ".su/"]):
         continue
 
     # Clean up ticket
     this_ticket = {
-        header: replace(header, ticket.get(header)) for header in headers
+        new_header: new_value for header in headers for new_header, new_value in replace(header, ticket.get(header))
     } | {
         fields.get(field.get("id")).get("title"): field.get("value") for field in ticket.get("fields")
     }
@@ -99,14 +106,13 @@ for ticket_id, ticket in progressbar(tickets.items()):
     # Retrieve comments
     all_comments += [
         {
-            header: replace(header, comment.get(header)) for header in comment_headers
+            new_header: new_value for header in comment_headers for new_header, new_value in replace(header, comment.get(header))
         } | {
             "ticket_id": ticket_id
         } for comment in retrieve_and_save("comments", endpoint=f"tickets/{ticket_id}/comments", save=False)
     ]
 
-
-keys = all_tickets[0].keys()
+keys = all_tickets[93].keys()
 
 with open("tickets.csv", "w", newline="", encoding="utf-8") as f:
     dw = csv.DictWriter(f, keys)
