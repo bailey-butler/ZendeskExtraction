@@ -1,0 +1,10 @@
+.env
+
+# Data extracts
+*.csv
+*.xlsx
+data/
+
+# Meta/compiled files
+.idea
+*.pyc
